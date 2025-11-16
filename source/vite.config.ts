@@ -27,7 +27,7 @@ export default defineConfig({
           // Split jsPDF and html2canvas (used in export)
           'pdf-export': ['jspdf', 'html2canvas'],
           // Split React vendors
-          'react-vendor': ['react', 'react-dom', 'react-is'],
+          'react-vendor': ['react', 'react-dom'],
           // Split UI library
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-select'],
         },
