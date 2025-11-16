@@ -1,0 +1,7 @@
+source/node_modules
+source/.git
+source/*.md
+.git
+*.log
+*.zip
+node_modules
