@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, Search } from 'lucide-react';
 import { EmergencySupportModal } from '@/components/app/EmergencySupportModal';
 import { SearchModal } from '@/components/app/SearchModal';
+import { NotificationCenter } from '@/components/app/NotificationCenter';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Lazy load screen components for better performance
@@ -44,6 +45,7 @@ function AppContent() {
 
       {/* Header Buttons - Fixed Position */}
       <div className="fixed top-4 right-4 z-40 flex gap-2">
+        <NotificationCenter onNavigate={setActiveTab} />
         <Button
           onClick={() => setShowSearch(true)}
           variant="outline"
