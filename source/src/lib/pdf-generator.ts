@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
- * PDF Generator utilities for Recovery Journey reports
+ * PDF Generator utilities for Recover reports
  */
 
 export interface ReportOptions {

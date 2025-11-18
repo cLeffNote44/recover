@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.recovery.journey',
-  appName: 'Recovery Journey',
+  appName: 'Recover',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

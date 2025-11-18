@@ -2,18 +2,18 @@ import { useState, lazy, Suspense } from 'react';
 import { AppProvider, useAppContext } from '@/contexts/AppContext';
 import { BottomNav } from '@/components/app/BottomNav';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Phone, X } from 'lucide-react';
-import { COPING_STRATEGIES } from '@/lib/constants';
+import { AlertCircle } from 'lucide-react';
+import { EmergencySupportModal } from '@/components/app/EmergencySupportModal';
 
 // Lazy load screen components for better performance
 const HomeScreen = lazy(() => import('@/components/app/screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const CalendarScreen = lazy(() => import('@/components/app/screens/CalendarScreen').then(m => ({ default: m.CalendarScreen })));
 const JournalScreen = lazy(() => import('@/components/app/screens/JournalScreen').then(m => ({ default: m.JournalScreen })));
 const ContactsScreen = lazy(() => import('@/components/app/screens/ContactsScreen').then(m => ({ default: m.ContactsScreen })));
-const AnalyticsScreen = lazy(() => import('@/components/app/screens/AnalyticsScreen').then(m => ({ default: m.AnalyticsScreen })));
 const GoalsScreen = lazy(() => import('@/components/app/screens/GoalsScreen').then(m => ({ default: m.GoalsScreen })));
 const PreventionScreen = lazy(() => import('@/components/app/screens/PreventionScreen').then(m => ({ default: m.PreventionScreen })));
+const WellnessScreen = lazy(() => import('@/components/app/screens/WellnessScreen').then(m => ({ default: m.WellnessScreen })));
+const RelapseTrackerScreen = lazy(() => import('@/components/app/screens/RelapseTrackerScreen').then(m => ({ default: m.RelapseTrackerScreen })));
 const SettingsScreen = lazy(() => import('@/components/app/screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
 
 function AppContent() {
@@ -26,7 +26,7 @@ function AppContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
         <div className="text-white text-center">
           <div className="text-6xl mb-4">💪</div>
-          <div className="text-2xl font-bold">Recovery Journey</div>
+          <div className="text-2xl font-bold">Recover</div>
           <div className="text-sm mt-2 opacity-90">Loading your data...</div>
         </div>
       </div>
@@ -54,7 +54,8 @@ function AppContent() {
       {/* Main Content */}
       <main
         id="main-content"
-        className="max-w-2xl mx-auto p-4 pt-16"
+        className="max-w-2xl mx-auto p-4 pt-16 pb-24"
+        style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         role="main"
         aria-label="Main content"
       >
@@ -70,9 +71,10 @@ function AppContent() {
           {activeTab === 'calendar' && <CalendarScreen />}
           {activeTab === 'journal' && <JournalScreen />}
           {activeTab === 'contacts' && <ContactsScreen />}
-          {activeTab === 'analytics' && <AnalyticsScreen />}
           {activeTab === 'goals' && <GoalsScreen />}
           {activeTab === 'prevention' && <PreventionScreen />}
+          {activeTab === 'wellness' && <WellnessScreen />}
+          {activeTab === 'recovery' && <RelapseTrackerScreen />}
           {activeTab === 'settings' && <SettingsScreen />}
         </Suspense>
       </main>
@@ -83,132 +85,12 @@ function AppContent() {
       </nav>
 
       {/* Emergency Modal */}
-      {showEmergency && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="emergency-modal-title"
-        >
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="bg-red-500 text-white">
-              <div className="flex items-center justify-between">
-                <CardTitle
-                  id="emergency-modal-title"
-                  className="flex items-center gap-2"
-                >
-                  <AlertCircle className="w-6 h-6" aria-hidden="true" />
-                  Emergency Support
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowEmergency(false)}
-                  className="text-white hover:bg-red-600"
-                  aria-label="Close emergency support dialog"
-                >
-                  <X className="w-5 h-5" aria-hidden="true" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {/* Crisis Hotlines */}
-              <section aria-labelledby="crisis-hotlines-heading">
-                <h3 id="crisis-hotlines-heading" className="font-semibold mb-3">
-                  24/7 Crisis Hotlines
-                </h3>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => window.location.href = 'tel:988'}
-                    aria-label="Call 988 Suicide and Crisis Lifeline"
-                  >
-                    <Phone className="w-5 h-5 mr-3 text-red-500" aria-hidden="true" />
-                    <div className="text-left">
-                      <div className="font-semibold">988 Suicide & Crisis Lifeline</div>
-                      <div className="text-sm text-muted-foreground">Call or text 988</div>
-                    </div>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => window.location.href = 'tel:18006624357'}
-                    aria-label="Call SAMHSA National Helpline at 1-800-662-4357"
-                  >
-                    <Phone className="w-5 h-5 mr-3 text-blue-500" aria-hidden="true" />
-                    <div className="text-left">
-                      <div className="font-semibold">SAMHSA National Helpline</div>
-                      <div className="text-sm text-muted-foreground">1-800-662-4357</div>
-                    </div>
-                  </Button>
-                </div>
-              </section>
-
-              {/* Your Contacts */}
-              {contacts.length > 0 && (
-                <section aria-labelledby="support-network-heading">
-                  <h3 id="support-network-heading" className="font-semibold mb-3">
-                    Your Support Network
-                  </h3>
-                  <div className="space-y-2">
-                    {contacts.slice(0, 3).map(contact => (
-                      <Button
-                        key={contact.id}
-                        variant="outline"
-                        className="w-full justify-start h-auto py-3"
-                        onClick={() => contact.phone && (window.location.href = `tel:${contact.phone}`)}
-                        disabled={!contact.phone}
-                        aria-label={`Call ${contact.name}, ${contact.role}${contact.phone ? ` at ${contact.phone}` : ' - no phone number'}`}
-                      >
-                        <Phone className="w-5 h-5 mr-3 text-green-500" aria-hidden="true" />
-                        <div className="text-left">
-                          <div className="font-semibold">{contact.name}</div>
-                          <div className="text-sm text-muted-foreground">{contact.role}</div>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Coping Strategies */}
-              <section aria-labelledby="coping-strategies-heading">
-                <h3 id="coping-strategies-heading" className="font-semibold mb-3">
-                  Immediate Coping Strategies
-                </h3>
-                <div className="grid gap-3" role="list">
-                  {COPING_STRATEGIES.slice(0, 6).map(strategy => (
-                    <Card key={strategy.id} className="border-2" role="listitem">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="text-2xl" aria-hidden="true">{strategy.icon}</div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold mb-1">{strategy.title}</h4>
-                            <p className="text-sm text-muted-foreground">{strategy.description}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </section>
-
-              {/* Encouragement */}
-              <Card className="bg-gradient-to-br from-purple-500 to-pink-500 text-white border-0">
-                <CardContent className="p-6 text-center">
-                  <div className="text-4xl mb-3">💪</div>
-                  <p className="text-lg font-semibold mb-2">You are not alone</p>
-                  <p className="text-sm opacity-90">
-                    This feeling will pass. Reach out for help. You've got this.
-                  </p>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <EmergencySupportModal
+        isOpen={showEmergency}
+        onClose={() => setShowEmergency(false)}
+        contacts={contacts}
+        riskLevel="high"
+      />
     </div>
   );
 }

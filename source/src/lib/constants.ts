@@ -32,21 +32,62 @@ export const COPING_STRATEGIES = [
 ];
 
 export const BADGES: Badge[] = [
-  { id: '24h', name: '24 Hours Strong', description: 'First full day sober', icon: '🌅', requirement: 1 },
-  { id: '1week', name: 'One Week Warrior', description: '7 days of sobriety', icon: '⭐', requirement: 7 },
-  { id: '30days', name: '30-Day Champion', description: 'One month sober', icon: '🏆', requirement: 30 },
-  { id: '60days', name: '60-Day Hero', description: 'Two months strong', icon: '💪', requirement: 60 },
-  { id: '90days', name: '90-Day Legend', description: 'Three months of recovery', icon: '👑', requirement: 90 },
-  { id: '6months', name: 'Half-Year Milestone', description: '6 months sober', icon: '🎖️', requirement: 180 },
-  { id: '1year', name: 'One Year Anniversary', description: 'Full year of sobriety', icon: '🎂', requirement: 365 },
-  { id: 'checkin50', name: 'Consistent Checker', description: '50 check-ins', icon: '✅', requirement: 50, type: 'checkins' },
-  { id: 'checkin100', name: 'Check-In Master', description: '100 check-ins', icon: '💯', requirement: 100, type: 'checkins' },
-  { id: 'meditation25', name: 'Mindful Beginner', description: '25 meditations', icon: '🧘', requirement: 25, type: 'meditations' },
-  { id: 'meditation50', name: 'Zen Master', description: '50 meditations', icon: '☮️', requirement: 50, type: 'meditations' },
-  { id: 'craving25', name: 'Urge Warrior', description: 'Overcame 25 cravings', icon: '⚔️', requirement: 25, type: 'cravings' },
-  { id: 'meeting25', name: 'Meeting Regular', description: '25 meetings attended', icon: '👥', requirement: 25, type: 'meetings' },
-  { id: 'gratitude30', name: 'Grateful Heart', description: '30 gratitude entries', icon: '💖', requirement: 30, type: 'gratitude' },
-  { id: 'streak30', name: 'Streak Superstar', description: '30-day check-in streak', icon: '🔥', requirement: 30, type: 'streak' }
+  // === RECOVERY MILESTONES ===
+  { id: '24h', name: '24 Hours Strong', description: 'First full day sober', icon: '🌅', requirement: 1, tier: 'bronze', category: 'recovery' },
+  { id: '1week', name: 'One Week Warrior', description: '7 days of sobriety', icon: '⭐', requirement: 7, tier: 'bronze', category: 'recovery' },
+  { id: '30days', name: '30-Day Champion', description: 'One month sober', icon: '🏆', requirement: 30, tier: 'silver', category: 'recovery' },
+  { id: '60days', name: '60-Day Hero', description: 'Two months strong', icon: '💪', requirement: 60, tier: 'silver', category: 'recovery' },
+  { id: '90days', name: '90-Day Legend', description: 'Three months of recovery', icon: '👑', requirement: 90, tier: 'gold', category: 'recovery' },
+  { id: '6months', name: 'Half-Year Milestone', description: '6 months sober', icon: '🎖️', requirement: 180, tier: 'gold', category: 'recovery' },
+  { id: '1year', name: 'One Year Anniversary', description: 'Full year of sobriety', icon: '🎂', requirement: 365, tier: 'platinum', category: 'recovery' },
+  { id: '2years', name: 'Two Year Triumph', description: '2 years of sustained recovery', icon: '🌟', requirement: 730, tier: 'platinum', category: 'recovery' },
+  { id: '5years', name: 'Five Year Legend', description: '5 incredible years sober', icon: '💎', requirement: 1825, tier: 'diamond', category: 'recovery' },
+  { id: '10years', name: 'Decade of Recovery', description: '10 amazing years of sobriety', icon: '👸', requirement: 3650, tier: 'diamond', category: 'recovery' },
+
+  // === ENGAGEMENT BADGES ===
+  { id: 'checkin50', name: 'Consistent Checker', description: '50 check-ins completed', icon: '✅', requirement: 50, type: 'checkins', tier: 'bronze', category: 'engagement' },
+  { id: 'checkin100', name: 'Check-In Master', description: '100 check-ins completed', icon: '💯', requirement: 100, type: 'checkins', tier: 'silver', category: 'engagement' },
+  { id: 'checkin500', name: 'Dedication Pro', description: '500 check-ins completed', icon: '🎯', requirement: 500, type: 'checkins', tier: 'gold', category: 'engagement' },
+  { id: 'checkin1000', name: 'Ultimate Commitment', description: '1000 check-ins milestone', icon: '🏅', requirement: 1000, type: 'checkins', tier: 'platinum', category: 'engagement' },
+  { id: 'streak7', name: 'Week Streaker', description: '7-day check-in streak', icon: '🔥', requirement: 7, type: 'streak', tier: 'bronze', category: 'engagement' },
+  { id: 'streak30', name: 'Streak Superstar', description: '30-day check-in streak', icon: '⚡', requirement: 30, type: 'streak', tier: 'silver', category: 'engagement' },
+  { id: 'streak100', name: 'Century Streaker', description: '100-day check-in streak', icon: '💥', requirement: 100, type: 'streak', tier: 'gold', category: 'engagement' },
+  { id: 'streak365', name: 'Year-Long Dedication', description: '365-day check-in streak', icon: '🌈', requirement: 365, type: 'streak', tier: 'platinum', category: 'engagement' },
+
+  // === WELLNESS BADGES ===
+  { id: 'meditation1', name: 'Mindfulness Starter', description: 'First meditation session', icon: '🧘', requirement: 1, type: 'meditations', tier: 'bronze', category: 'wellness', secret: true },
+  { id: 'meditation25', name: 'Mindful Beginner', description: '25 meditation sessions', icon: '🧘‍♀️', requirement: 25, type: 'meditations', tier: 'bronze', category: 'wellness' },
+  { id: 'meditation50', name: 'Zen Practitioner', description: '50 meditation sessions', icon: '☮️', requirement: 50, type: 'meditations', tier: 'silver', category: 'wellness' },
+  { id: 'meditation100', name: 'Meditation Master', description: '100 meditation sessions', icon: '🕉️', requirement: 100, type: 'meditations', tier: 'gold', category: 'wellness' },
+  { id: 'meeting10', name: 'Meeting Newcomer', description: '10 meetings attended', icon: '👥', requirement: 10, type: 'meetings', tier: 'bronze', category: 'wellness' },
+  { id: 'meeting25', name: 'Meeting Regular', description: '25 meetings attended', icon: '🤝', requirement: 25, type: 'meetings', tier: 'bronze', category: 'wellness' },
+  { id: 'meeting100', name: 'Community Champion', description: '100 meetings attended', icon: '👨‍👩‍👧‍👦', requirement: 100, type: 'meetings', tier: 'silver', category: 'wellness' },
+  { id: 'meeting500', name: 'Fellowship Master', description: '500 meetings attended', icon: '🏛️', requirement: 500, type: 'meetings', tier: 'platinum', category: 'wellness' },
+
+  // === PERSONAL GROWTH BADGES ===
+  { id: 'gratitude1', name: 'First Gratitude', description: 'Your first gratitude entry', icon: '💖', requirement: 1, type: 'gratitude', tier: 'bronze', category: 'growth', secret: true },
+  { id: 'gratitude30', name: 'Grateful Heart', description: '30 gratitude entries', icon: '💝', requirement: 30, type: 'gratitude', tier: 'bronze', category: 'growth' },
+  { id: 'gratitude100', name: 'Gratitude Champion', description: '100 gratitude entries', icon: '💗', requirement: 100, type: 'gratitude', tier: 'silver', category: 'growth' },
+  { id: 'gratitude365', name: 'Year of Thankfulness', description: '365 gratitude entries', icon: '🌺', requirement: 365, type: 'gratitude', tier: 'platinum', category: 'growth' },
+  { id: 'growth10', name: 'Growth Seeker', description: '10 growth log entries', icon: '🌱', requirement: 10, type: 'growth-logs', tier: 'bronze', category: 'growth' },
+  { id: 'growth50', name: 'Personal Developer', description: '50 growth log entries', icon: '🌿', requirement: 50, type: 'growth-logs', tier: 'silver', category: 'growth' },
+  { id: 'growth100', name: 'Transformation Master', description: '100 growth log entries', icon: '🌳', requirement: 100, type: 'growth-logs', tier: 'gold', category: 'growth' },
+  { id: 'challenge10', name: 'Challenge Acceptor', description: '10 challenges overcome', icon: '💪', requirement: 10, type: 'challenges', tier: 'bronze', category: 'growth' },
+  { id: 'challenge50', name: 'Obstacle Crusher', description: '50 challenges overcome', icon: '🦾', requirement: 50, type: 'challenges', tier: 'silver', category: 'growth' },
+
+  // === CRISIS MANAGEMENT BADGES ===
+  { id: 'craving1', name: 'First Victory', description: 'Overcame your first craving', icon: '⚔️', requirement: 1, type: 'cravings', tier: 'bronze', category: 'crisis', secret: true },
+  { id: 'craving10', name: 'Urge Defender', description: 'Overcame 10 cravings', icon: '🛡️', requirement: 10, type: 'cravings', tier: 'bronze', category: 'crisis' },
+  { id: 'craving25', name: 'Urge Warrior', description: 'Overcame 25 cravings', icon: '⚔️', requirement: 25, type: 'cravings', tier: 'silver', category: 'crisis' },
+  { id: 'craving50', name: 'Temptation Slayer', description: 'Overcame 50 cravings', icon: '🗡️', requirement: 50, type: 'cravings', tier: 'gold', category: 'crisis' },
+  { id: 'craving100', name: 'Invincible Mind', description: 'Overcame 100 cravings', icon: '🏰', requirement: 100, type: 'cravings', tier: 'platinum', category: 'crisis' },
+
+  // === SPECIAL / SECRET BADGES ===
+  { id: 'earlybird', name: 'Early Bird', description: 'Checked in before 7 AM', icon: '🌅', requirement: 1, tier: 'bronze', category: 'special', secret: true },
+  { id: 'nightowl', name: 'Night Owl', description: 'Checked in after 11 PM', icon: '🦉', requirement: 1, tier: 'bronze', category: 'special', secret: true },
+  { id: 'perfectweek', name: 'Perfect Week', description: 'Completed all activities for 7 days straight', icon: '✨', requirement: 7, tier: 'gold', category: 'special', secret: true },
+  { id: 'centurion', name: 'The Centurion', description: 'Reached 100 in every category', icon: '💫', requirement: 100, tier: 'diamond', category: 'special', secret: true },
+  { id: 'allbadges', name: 'Badge Collector', description: 'Unlocked all non-secret badges', icon: '🏆', requirement: 1, tier: 'platinum', category: 'special', secret: true }
 ];
 
 export const MOOD_EMOJIS = [

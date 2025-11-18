@@ -4,13 +4,17 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { useAppContext } from "./contexts/AppContext";
+import { useAppContext, AppProvider } from "./contexts/AppContext";
 import Home from "./pages/Home";
 import AppPage from "./pages/AppPage";
 import Onboarding from "./pages/Onboarding";
+import { LockScreen } from "./components/LockScreen";
+import { biometricAuthManager } from "./lib/biometric-auth";
+import { App as CapacitorApp } from '@capacitor/app';
+import { useState, useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
-  const { onboardingCompleted, loading } = useAppContext();
+  const { userProfile, loading } = useAppContext();
 
   if (loading) {
     return (
@@ -20,7 +24,8 @@ function ProtectedRoute({ component: Component }: { component: () => JSX.Element
     );
   }
 
-  if (!onboardingCompleted) {
+  // Check if user profile exists - if not, redirect to onboarding
+  if (!userProfile) {
     return <Redirect to="/onboarding" />;
   }
 
@@ -48,25 +53,82 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  const [isLocked, setIsLocked] = useState(false);
+  const [isAppVisible, setIsAppVisible] = useState(true);
+
+  useEffect(() => {
+    // Check if authentication is required on app start
+    checkAuthStatus();
+
+    // Listen for app state changes (mobile)
+    const appStateListener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      setIsAppVisible(isActive);
+
+      if (isActive) {
+        // App came to foreground, check if auth is required
+        checkAuthStatus();
+      }
+    });
+
+    // Listen for page visibility changes (web)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAuthStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      appStateListener.then(listener => listener.remove());
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const checkAuthStatus = () => {
+    const settings = biometricAuthManager.getSettings();
+
+    // Only lock if biometric or PIN is enabled
+    if (!settings.enabled && !settings.pinEnabled) {
+      setIsLocked(false);
+      return;
+    }
+
+    // Check if auth is required based on timeout
+    if (biometricAuthManager.isAuthRequired()) {
+      setIsLocked(true);
+    }
+  };
+
+  const handleUnlock = () => {
+    setIsLocked(false);
+  };
+
   return (
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="dark"
         switchable
-        // switchable
       >
-        <TooltipProvider>
-          {/* Screen reader announcements */}
-          <div
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            className="sr-only"
-            id="accessibility-announcements"
-          />
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AppProvider>
+          <TooltipProvider>
+            {/* Screen reader announcements */}
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="sr-only"
+              id="accessibility-announcements"
+            />
+            <Toaster />
+
+            {/* Lock Screen Overlay */}
+            {isLocked && <LockScreen onUnlock={handleUnlock} />}
+
+            {/* Main App Router */}
+            <Router />
+          </TooltipProvider>
+        </AppProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

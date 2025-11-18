@@ -196,11 +196,189 @@ export function getBackupStats(data: BackupData): {
     (data.gratitude?.length || 0) +
     (data.growthLogs?.length || 0) +
     (data.contacts?.length || 0) +
-    (data.reasonsForSobriety?.length || 0);
+    (data.reasonsForSobriety?.length || 0) +
+    (data.goals?.length || 0) +
+    (data.sleepEntries?.length || 0) +
+    (data.medications?.length || 0) +
+    (data.exerciseEntries?.length || 0) +
+    (data.nutritionEntries?.length || 0) +
+    (data.relapses?.length || 0) +
+    (data.cleanPeriods?.length || 0);
 
   return {
     totalRecords,
     exportDate: data.exportDate || 'Unknown',
     version: data.version || 'Unknown'
   };
+}
+
+/**
+ * Create an automatic backup in localStorage
+ */
+export function createAutoBackup(data: AppData): void {
+  try {
+    const backup: BackupData = {
+      ...data,
+      version: CURRENT_BACKUP_VERSION,
+      exportDate: new Date().toISOString(),
+      appVersion: APP_VERSION
+    };
+
+    // Store in localStorage with timestamp
+    const backupKey = `recover_auto_backup_${Date.now()}`;
+    localStorage.setItem(backupKey, JSON.stringify(backup));
+
+    // Keep only the last 5 auto backups
+    const allKeys = Object.keys(localStorage).filter(key => key.startsWith('recover_auto_backup_'));
+    if (allKeys.length > 5) {
+      // Sort by timestamp (oldest first)
+      allKeys.sort();
+      // Remove oldest backups
+      for (let i = 0; i < allKeys.length - 5; i++) {
+        localStorage.removeItem(allKeys[i]!);
+      }
+    }
+
+    // Update last backup timestamp
+    localStorage.setItem('recover_last_backup', new Date().toISOString());
+  } catch (error) {
+    console.error('Failed to create auto backup:', error);
+  }
+}
+
+/**
+ * Get list of auto backups from localStorage
+ */
+export function getAutoBackups(): Array<{ key: string; date: string; stats: ReturnType<typeof getBackupStats> | null }> {
+  const backups: Array<{ key: string; date: string; stats: ReturnType<typeof getBackupStats> | null }> = [];
+
+  try {
+    const allKeys = Object.keys(localStorage).filter(key => key.startsWith('recover_auto_backup_'));
+
+    for (const key of allKeys) {
+      const backup = localStorage.getItem(key);
+      if (backup) {
+        try {
+          const parsed = JSON.parse(backup);
+          backups.push({
+            key,
+            date: parsed.exportDate || 'Unknown date',
+            stats: getBackupStats(parsed)
+          });
+        } catch {
+          // Skip invalid backups
+        }
+      }
+    }
+
+    // Sort by date (newest first)
+    backups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } catch (error) {
+    console.error('Failed to get auto backups:', error);
+  }
+
+  return backups;
+}
+
+/**
+ * Restore from auto backup
+ */
+export function restoreAutoBackup(key: string): { success: boolean; data?: AppData; errors?: string[] } {
+  try {
+    const backup = localStorage.getItem(key);
+    if (!backup) {
+      return {
+        success: false,
+        errors: ['Backup not found']
+      };
+    }
+
+    const parsed = JSON.parse(backup);
+    const validation = validateBackupData(parsed);
+
+    if (!validation.valid) {
+      return {
+        success: false,
+        errors: validation.errors
+      };
+    }
+
+    // Extract app data
+    const { version, exportDate, appVersion, ...appData } = parsed;
+
+    return {
+      success: true,
+      data: appData as AppData
+    };
+  } catch (error) {
+    return {
+      success: false,
+      errors: ['Failed to restore backup']
+    };
+  }
+}
+
+/**
+ * Delete an auto backup
+ */
+export function deleteAutoBackup(key: string): void {
+  localStorage.removeItem(key);
+}
+
+/**
+ * Check if backup reminder should be shown (if no backup in 7 days)
+ */
+export function shouldShowBackupReminder(): boolean {
+  const lastBackup = localStorage.getItem('recover_last_backup');
+  if (!lastBackup) return true;
+
+  try {
+    const lastBackupDate = new Date(lastBackup);
+    const daysSinceBackup = Math.floor(
+      (Date.now() - lastBackupDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysSinceBackup >= 7;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Dismiss backup reminder for 7 days
+ */
+export function dismissBackupReminder(): void {
+  localStorage.setItem('recover_backup_reminder_dismissed', new Date().toISOString());
+}
+
+/**
+ * Check if backup reminder was dismissed recently
+ */
+export function isBackupReminderDismissed(): boolean {
+  const dismissed = localStorage.getItem('recover_backup_reminder_dismissed');
+  if (!dismissed) return false;
+
+  try {
+    const dismissedDate = new Date(dismissed);
+    const daysSinceDismiss = Math.floor(
+      (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysSinceDismiss < 7;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get days since last backup
+ */
+export function getDaysSinceLastBackup(): number | null {
+  const lastBackup = localStorage.getItem('recover_last_backup');
+  if (!lastBackup) return null;
+
+  try {
+    const lastBackupDate = new Date(lastBackup);
+    return Math.floor((Date.now() - lastBackupDate.getTime()) / (1000 * 60 * 60 * 24));
+  } catch {
+    return null;
+  }
 }

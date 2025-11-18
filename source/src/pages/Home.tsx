@@ -21,81 +21,91 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const features = [
     {
-      icon: CheckCircle,
-      title: "Daily Check-Ins",
-      description: "Build accountability with daily check-ins and streak tracking. Never miss a day.",
-      gradient: "from-green-500 to-emerald-600"
+      icon: Award,
+      title: "Dual Progress Tracking",
+      description: "Track both days sober (from start date) and check-in streak. Never lose sight of your progress.",
+      gradient: "from-blue-500 to-purple-600"
     },
     {
-      icon: Heart,
-      title: "Mood Tracking",
-      description: "Track your emotional state with 5-level mood scale and identify patterns over time.",
-      gradient: "from-pink-500 to-rose-600"
+      icon: TrendingUp,
+      title: "AI Risk Prediction",
+      description: "Smart algorithm analyzes your patterns and alerts you to potential relapse risks early.",
+      gradient: "from-red-500 to-orange-600"
     },
     {
       icon: Brain,
-      title: "Meditation Timer",
-      description: "Built-in meditation timer with 9 types. Track streaks and total mindfulness time.",
+      title: "7 Recovery Skills",
+      description: "Evidence-based coping strategies: grounding, urge surfing, mindfulness, HALT, and more.",
       gradient: "from-purple-500 to-indigo-600"
     },
     {
       icon: Shield,
-      title: "Prevention Plan",
-      description: "Build a personalized relapse prevention plan with warning signs and action levels.",
-      gradient: "from-blue-500 to-cyan-600"
+      title: "Emergency Support",
+      description: "Instant access to crisis hotlines, emergency contacts, and your relapse prevention plan.",
+      gradient: "from-red-600 to-pink-600"
+    },
+    {
+      icon: CheckCircle,
+      title: "Daily Check-Ins",
+      description: "Build accountability with mood tracking, HALT assessments, and daily reflections.",
+      gradient: "from-green-500 to-emerald-600"
     },
     {
       icon: Zap,
-      title: "Craving Tracker",
-      description: "Log cravings with intensity and triggers. Analyze patterns to prevent relapse.",
+      title: "Craving Management",
+      description: "Log cravings with triggers, intensity, and coping strategies. Identify patterns to stay ahead.",
       gradient: "from-orange-500 to-amber-600"
     },
     {
-      icon: TrendingUp,
-      title: "Analytics Dashboard",
-      description: "Comprehensive insights with charts, trends, and milestone progress tracking.",
-      gradient: "from-violet-500 to-purple-600"
+      icon: Heart,
+      title: "Meditation & Mindfulness",
+      description: "Guided meditation with breathing exercises, body scans, and loving-kindness practice.",
+      gradient: "from-pink-500 to-rose-600"
+    },
+    {
+      icon: Sparkles,
+      title: "Achievement System",
+      description: "Unlock 40+ badges across 6 categories. Celebrate milestones with Bronze, Silver, and Gold tiers.",
+      gradient: "from-yellow-500 to-orange-600"
     },
     {
       icon: Users,
-      title: "Support Network",
-      description: "Manage contacts, quick-dial sponsor, and access emergency support instantly.",
-      gradient: "from-teal-500 to-emerald-600"
+      title: "Progress Sharing",
+      description: "Generate HIPAA-compliant reports for therapists and sponsors with granular privacy controls.",
+      gradient: "from-teal-500 to-cyan-600"
     },
     {
       icon: Calendar,
-      title: "Event Calendar",
-      description: "Schedule meetings, appointments, and recovery events with reminders.",
+      title: "Meeting & Event Tracker",
+      description: "Log support meetings, therapy sessions, and recovery events with notes and reminders.",
       gradient: "from-indigo-500 to-blue-600"
     },
     {
+      icon: TrendingUp,
+      title: "Advanced Analytics",
+      description: "Beautiful charts showing mood trends, craving patterns, and recovery insights.",
+      gradient: "from-violet-500 to-purple-600"
+    },
+    {
       icon: Moon,
-      title: "Dark Mode",
-      description: "Beautiful dark theme for comfortable viewing anytime, with smooth transitions.",
-      gradient: "from-slate-500 to-gray-600"
+      title: "Mobile Features",
+      description: "Native iOS/Android apps, home screen widgets, biometric lock, and local notifications.",
+      gradient: "from-slate-600 to-gray-700"
     }
   ];
 
-  const stats = [
-    { label: "Features", value: "40+", icon: Sparkles },
-    { label: "Tabs", value: "8", icon: Award },
-    { label: "Privacy", value: "100%", icon: Shield },
-    { label: "Free", value: "Always", icon: Heart }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-pink-900 via-purple-900 to-rose-900">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="inline-block mb-6">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-3xl shadow-2xl shadow-purple-500/50">
-              <Award className="w-16 h-16 text-white" />
-            </div>
+            <img
+              src="/site-logo.png"
+              alt="Site Logo"
+              className="w-48 h-48 md:w-64 md:h-64 mx-auto object-contain drop-shadow-2xl"
+            />
           </div>
-          <h1 className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-            Recovery Journey
-          </h1>
           <p className="text-2xl md:text-3xl text-gray-300 mb-4 font-light">
             Your Complete Sobriety Companion
           </p>
@@ -112,28 +122,12 @@ export default function Home() {
                 <Sparkles className="w-5 h-5 mr-2" />
                 Launch App
               </Button>
-            <a href="/sobriety-app-v4-complete.zip" download>
+            <a href="/sobriety-app-v5-complete.zip" download>
               <Button size="lg" variant="outline" className="border-2 border-purple-500 text-purple-300 hover:bg-purple-500/10 px-8 py-6 text-lg rounded-2xl">
                 <Download className="w-5 h-5 mr-2" />
-                Download v4.0
+                Download v5.0
               </Button>
             </a>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {stats.map((stat, idx) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={idx} className="bg-white/5 border-white/10 backdrop-blur-sm">
-                  <CardContent className="p-6 text-center">
-                    <Icon className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                    <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
-                    <div className="text-sm text-gray-400">{stat.label}</div>
-                  </CardContent>
-                </Card>
-              );
-            })}
           </div>
         </div>
 
@@ -166,29 +160,37 @@ export default function Home() {
           </div>
         </div>
 
-        {/* What's New in v4 */}
+        {/* What's New in v5 */}
         <div className="mb-16">
           <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-2 border-purple-500/50 rounded-3xl p-8 backdrop-blur-sm">
             <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
               <Sparkles className="w-8 h-8 text-purple-400" />
-              What's New in Version 4.0
+              What's New in Version 5.0
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-xl font-bold text-purple-300 mb-2">😊 Mood Tracking</h3>
-                <p className="text-gray-300">Track emotional state with daily check-ins using a 5-level emoji scale. Identify patterns and trends over time.</p>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">📊 Dual Progress Widget</h3>
+                <p className="text-gray-300">Beautiful home screen widget showing both Days Sober (from start date) AND Check-In Streak. Motivational messages adapt to your progress.</p>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-purple-300 mb-2">🛡️ Relapse Prevention Plan</h3>
-                <p className="text-gray-300">Build a personalized safety plan with warning signs, high-risk situations, and action levels for crisis management.</p>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">🤖 AI Risk Prediction</h3>
+                <p className="text-gray-300">Smart algorithm analyzes check-ins, moods, cravings, and meetings to predict relapse risk with proactive interventions.</p>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-purple-300 mb-2">🧘 Meditation Tracker</h3>
-                <p className="text-gray-300">Built-in timer with 9 meditation types. Track streaks, total time, and build a consistent mindfulness practice.</p>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">🧠 7 Recovery Skills</h3>
+                <p className="text-gray-300">Master evidence-based coping strategies: Grounding, Cognitive Restructuring, Urge Surfing, Mindfulness, HALT Response, Distraction, and Reaching Out.</p>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-purple-300 mb-2">🌙 Dark Mode</h3>
-                <p className="text-gray-300">Beautiful dark theme with smooth transitions. Toggle anytime for comfortable viewing in any environment.</p>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">🚨 Emergency Support</h3>
+                <p className="text-gray-300">One-tap access to crisis hotlines, emergency contacts, and your personalized action plan when you need help most.</p>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">🏆 Achievement Badges</h3>
+                <p className="text-gray-300">Unlock 40+ badges with Bronze, Silver, and Gold tiers across sobriety, check-ins, meditation, cravings, meetings, and gratitude.</p>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-purple-300 mb-2">📱 Mobile Widgets</h3>
+                <p className="text-gray-300">iOS and Android home screen widgets show your progress at a glance with auto-updates and theme customization.</p>
               </div>
             </div>
           </div>
@@ -247,7 +249,7 @@ export default function Home() {
         {/* CTA Section */}
         <div className="text-center bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-12 shadow-2xl shadow-purple-500/50">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Start Your Recovery Journey Today
+            Start Your Recover Today
           </h2>
           <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
             Join thousands using this comprehensive recovery companion. One day at a time. You've got this. 💪
@@ -270,7 +272,7 @@ export default function Home() {
 
         {/* Footer */}
         <div className="mt-16 text-center text-gray-500 text-sm">
-          <p className="mb-2">Recovery Journey v4.0 - Built with ❤️ for the recovery community</p>
+          <p className="mb-2">Recover v5.0 - Built with ❤️ for the recovery community</p>
           <p>Not a substitute for professional treatment. Consult healthcare providers for serious issues.</p>
           <p className="mt-4">Crisis Support: <strong className="text-purple-400">988 Suicide & Crisis Lifeline</strong></p>
         </div>

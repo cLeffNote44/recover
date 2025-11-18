@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Home, Calendar, Heart, Users, BarChart3, Target, Shield, Settings } from "lucide-react";
+import { Home, Calendar, BookOpen, Users, Target, Shield, Settings, Heart, TrendingUp } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -9,17 +9,17 @@ interface BottomNavProps {
 const tabs = [
   { id: 'home', icon: Home, label: 'Home' },
   { id: 'calendar', icon: Calendar, label: 'Calendar' },
-  { id: 'journal', icon: Heart, label: 'Journal' },
-  { id: 'goals', icon: Target, label: 'Goals' },
+  { id: 'journal', icon: BookOpen, label: 'Journal' },
   { id: 'prevention', icon: Shield, label: 'Prevention' },
+  { id: 'wellness', icon: Heart, label: 'Wellness' },
+  { id: 'recovery', icon: TrendingUp, label: 'Recovery' },
   { id: 'contacts', icon: Users, label: 'Contacts' },
-  { id: 'analytics', icon: BarChart3, label: 'Analytics' },
   { id: 'settings', icon: Settings, label: 'Settings' }
 ];
 
 export const BottomNav = memo(function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50" role="navigation">
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 pb-safe" role="navigation" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)' }}>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-around items-center h-16" role="tablist">
           {tabs.map(tab => {

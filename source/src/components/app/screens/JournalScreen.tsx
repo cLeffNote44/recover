@@ -601,6 +601,114 @@ export function JournalScreen() {
           </Card>
         </div>
       )}
+
+      {/* Add Challenge Modal */}
+      {showAddChallenge && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Log Challenge</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Situation</label>
+                <Textarea
+                  placeholder="What was the challenging situation?"
+                  value={newChallenge.situation}
+                  onChange={(e) => setNewChallenge({ ...newChallenge, situation: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Your Response</label>
+                <Textarea
+                  placeholder="How did you respond?"
+                  value={newChallenge.response}
+                  onChange={(e) => setNewChallenge({ ...newChallenge, response: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Outcome</label>
+                <Textarea
+                  placeholder="What was the outcome?"
+                  value={newChallenge.outcome}
+                  onChange={(e) => setNewChallenge({ ...newChallenge, outcome: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowAddChallenge(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddChallenge}
+                  disabled={!newChallenge.situation || !newChallenge.response || !newChallenge.outcome}
+                  className="flex-1"
+                >
+                  Save
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Add Meditation Modal */}
+      {showAddMeditation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Log Meditation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Type</label>
+                <Select
+                  value={newMeditation.type}
+                  onValueChange={(value) => setNewMeditation({ ...newMeditation, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEDITATION_TYPES.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Duration: {newMeditation.duration} minutes</label>
+                <Slider
+                  value={[newMeditation.duration]}
+                  onValueChange={([value]) => setNewMeditation({ ...newMeditation, duration: value })}
+                  min={1}
+                  max={120}
+                  step={1}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Notes (optional)</label>
+                <Textarea
+                  placeholder="How was your practice?"
+                  value={newMeditation.notes}
+                  onChange={(e) => setNewMeditation({ ...newMeditation, notes: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowAddMeditation(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMeditation} className="flex-1">
+                  Save
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

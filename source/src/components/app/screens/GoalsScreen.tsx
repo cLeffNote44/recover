@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Target, Trophy, CheckCircle2, Circle, Trash2, Edit, TrendingUp } from 'lucide-react';
-import type { Goal } from '@/types/app';
+import { Plus, Target, Trophy, CheckCircle2, Circle, Trash2, Edit, TrendingUp, Calendar as CalendarIcon, Repeat, X } from 'lucide-react';
+import type { Goal, CalendarEvent } from '@/types/app';
 import { toast } from 'sonner';
 import { celebrate } from '@/lib/celebrations';
 
@@ -27,7 +28,7 @@ const CATEGORY_COLORS = {
 };
 
 export function GoalsScreen() {
-  const { goals, setGoals, goalProgress, setGoalProgress, celebrationsEnabled } = useAppContext();
+  const { goals, setGoals, goalProgress, setGoalProgress, events, setEvents, celebrationsEnabled } = useAppContext();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
@@ -56,6 +57,13 @@ export function GoalsScreen() {
 
   const handleDeleteGoal = (goalId: number) => {
     if (confirm('Are you sure you want to delete this goal?')) {
+      const goal = goals.find(g => g.id === goalId);
+
+      // Delete linked calendar event if it exists
+      if (goal?.linkedCalendarEventId) {
+        setEvents(events.filter(e => e.id !== goal.linkedCalendarEventId));
+      }
+
       setGoals(goals.filter(g => g.id !== goalId));
       setGoalProgress(goalProgress.filter(gp => gp.goalId !== goalId));
       toast.success('Goal deleted');
@@ -152,51 +160,45 @@ export function GoalsScreen() {
         </Card>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter */}
       <div className="flex gap-2">
-        <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('all')}
-        >
-          All ({goals.length})
-        </Button>
         <Button
           variant={filter === 'active' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setFilter('active')}
         >
-          Active ({activeGoals.length})
+          Active
         </Button>
         <Button
           variant={filter === 'completed' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setFilter('completed')}
         >
-          Completed ({completedGoals.length})
+          Completed
+        </Button>
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('all')}
+        >
+          All
         </Button>
       </div>
 
       {/* Goals List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredGoals.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="font-semibold mb-2">No goals yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {filter === 'active'
-                  ? 'Create your first goal to start tracking progress'
-                  : filter === 'completed'
-                    ? 'Complete a goal to see it here'
-                    : 'Create your first goal to get started'}
+              <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">No Goals Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first goal to start tracking your progress
               </p>
-              {filter === 'active' && (
-                <Button onClick={() => setShowCreateModal(true)} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Goal
-                </Button>
-              )}
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Goal
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -216,7 +218,7 @@ export function GoalsScreen() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{goal.description}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
                           <span className="capitalize">{goal.category}</span>
                           <span>•</span>
                           <span className="capitalize">{goal.frequency}</span>
@@ -224,6 +226,15 @@ export function GoalsScreen() {
                             <>
                               <span>•</span>
                               <span>Target: {goal.targetValue}</span>
+                            </>
+                          )}
+                          {goal.addToCalendar && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 text-blue-500">
+                                <CalendarIcon className="w-3 h-3" />
+                                On Calendar
+                              </span>
                             </>
                           )}
                         </div>
@@ -307,6 +318,8 @@ export function GoalsScreen() {
           onClose={() => setShowCreateModal(false)}
           goals={goals}
           setGoals={setGoals}
+          events={events}
+          setEvents={setEvents}
         />
       )}
     </div>
@@ -317,11 +330,15 @@ export function GoalsScreen() {
 function CreateGoalModal({
   onClose,
   goals,
-  setGoals
+  setGoals,
+  events,
+  setEvents
 }: {
   onClose: () => void;
   goals: Goal[];
   setGoals: (goals: Goal[]) => void;
+  events: CalendarEvent[];
+  setEvents: (events: CalendarEvent[]) => void;
 }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -330,14 +347,33 @@ function CreateGoalModal({
     targetType: 'numerical' as Goal['targetType'],
     targetValue: 10,
     frequency: 'daily' as Goal['frequency'],
-    reminderEnabled: false
+    recurringTime: '09:00',
+    recurringDays: [] as number[],
+    reminderEnabled: false,
+    addToCalendar: false
   });
+
+  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const toggleDay = (day: number) => {
+    setFormData({
+      ...formData,
+      recurringDays: formData.recurringDays.includes(day)
+        ? formData.recurringDays.filter(d => d !== day)
+        : [...formData.recurringDays, day]
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title.trim()) {
       toast.error('Please enter a goal title');
+      return;
+    }
+
+    if (formData.frequency === 'weekly' && formData.addToCalendar && formData.recurringDays.length === 0) {
+      toast.error('Please select at least one day for weekly recurring goals');
       return;
     }
 
@@ -350,23 +386,52 @@ function CreateGoalModal({
       targetValue: formData.targetType !== 'yes-no' ? formData.targetValue : undefined,
       currentValue: 0,
       frequency: formData.frequency,
+      recurringDays: formData.frequency === 'weekly' ? formData.recurringDays : undefined,
+      recurringTime: formData.frequency !== 'one-time' ? formData.recurringTime : undefined,
       startDate: new Date().toISOString(),
       isActive: true,
       isCompleted: false,
       streak: 0,
-      reminderEnabled: formData.reminderEnabled
+      reminderEnabled: formData.reminderEnabled,
+      addToCalendar: formData.addToCalendar
     };
 
+    // Create calendar event if requested
+    if (formData.addToCalendar && formData.frequency !== 'one-time') {
+      const calendarEvent: CalendarEvent = {
+        id: Date.now() + 1,
+        title: `Goal: ${formData.title}`,
+        description: formData.description,
+        date: new Date().toISOString().split('T')[0],
+        time: formData.recurringTime,
+        type: 'reminder',
+        reminders: [{ minutes: 15 }],
+        recurring: {
+          frequency: formData.frequency === 'hourly' ? 'daily' : formData.frequency as any,
+          interval: 1,
+          daysOfWeek: formData.frequency === 'weekly' ? formData.recurringDays : undefined,
+        }
+      };
+
+      newGoal.linkedCalendarEventId = calendarEvent.id;
+      setEvents([...events, calendarEvent]);
+      toast.success('Goal created and added to calendar!');
+    } else {
+      toast.success('Goal created!');
+    }
+
     setGoals([...goals, newGoal]);
-    toast.success('Goal created!');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <CardHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <Card className="w-full max-w-lg my-8">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Create New Goal</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -449,13 +514,64 @@ function CreateGoalModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
                   <SelectItem value="one-time">One-time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Recurring Time */}
+            {formData.frequency !== 'one-time' && (
+              <div>
+                <Label htmlFor="recurringTime">Reminder Time</Label>
+                <Input
+                  id="recurringTime"
+                  type="time"
+                  value={formData.recurringTime}
+                  onChange={(e) => setFormData({ ...formData, recurringTime: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Weekly Days Selection */}
+            {formData.frequency === 'weekly' && (
+              <div>
+                <Label>Repeat On</Label>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {dayLabels.map((day, idx) => (
+                    <Button
+                      key={idx}
+                      type="button"
+                      variant={formData.recurringDays.includes(idx) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleDay(idx)}
+                      className="w-12"
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add to Calendar Checkbox */}
+            {formData.frequency !== 'one-time' && (
+              <div className="flex items-center gap-2 pt-3 border-t">
+                <Checkbox
+                  id="addToCalendar"
+                  checked={formData.addToCalendar}
+                  onCheckedChange={(checked) => setFormData({ ...formData, addToCalendar: checked === true })}
+                />
+                <label htmlFor="addToCalendar" className="text-sm flex items-center gap-2 cursor-pointer">
+                  <CalendarIcon className="w-4 h-4" />
+                  Add recurring reminders to calendar
+                </label>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" className="flex-1">

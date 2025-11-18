@@ -1,6 +1,6 @@
 {
-  "name": "Recovery Journey - Sobriety Tracker",
-  "short_name": "Recovery Journey",
+  "name": "Recover - Sobriety Tracker",
+  "short_name": "Recover",
   "description": "Complete sobriety tracking app with daily check-ins, craving management, meditation, and recovery tools",
   "start_url": "/",
   "display": "standalone",

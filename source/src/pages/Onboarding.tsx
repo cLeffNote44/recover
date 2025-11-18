@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { requestNotificationPermission, isNative } from '@/lib/notifications';
 import {
-  Award, Bell, Calendar, Heart, Shield, Sparkles, User, Clock
+  Award, Bell, Calendar, Heart, Shield, Sparkles, User, Clock, Brain, TrendingUp, Zap
 } from 'lucide-react';
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const {
+    setUserProfile,
     setSobrietyDate,
     setContacts,
     setNotificationSettings,
@@ -22,6 +23,8 @@ export default function Onboarding() {
   } = useAppContext();
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [userName, setUserName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [sobrietyDateInput, setSobrietyDateInput] = useState(
     new Date().toISOString().split('T')[0]
   );
@@ -50,7 +53,16 @@ export default function Onboarding() {
   };
 
   const completeOnboarding = () => {
-    // Save sobriety date
+    // Create and save user profile
+    const profile = {
+      name: userName,
+      dateOfBirth: dateOfBirth,
+      sobrietyDate: sobrietyDateInput,
+      createdAt: new Date().toISOString()
+    };
+
+    // Update all state
+    setUserProfile(profile);
     setSobrietyDate(sobrietyDateInput);
 
     // Save sponsor contact if provided
@@ -75,8 +87,25 @@ export default function Onboarding() {
     // Mark onboarding as completed
     setOnboardingCompleted(true);
 
-    // Navigate to app
-    setLocation('/app');
+    // Force a direct save to localStorage as a fallback
+    // This ensures data is persisted even if state updates haven't completed
+    try {
+      const stored = localStorage.getItem('recovery_journey_data');
+      if (stored) {
+        const data = JSON.parse(stored);
+        data.userProfile = profile;
+        data.sobrietyDate = sobrietyDateInput;
+        data.onboardingCompleted = true;
+        localStorage.setItem('recovery_journey_data', JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error('Error force-saving to localStorage:', error);
+    }
+
+    // Wait for state updates to propagate before navigating
+    setTimeout(() => {
+      setLocation('/app');
+    }, 300);
   };
 
   const requestNotifications = async () => {
@@ -97,7 +126,7 @@ export default function Onboarding() {
       case 1:
         return (
           <OnboardingStep
-            title="Welcome to Recovery Journey"
+            title="Welcome to Recover"
             description="Your personal companion for sobriety and recovery"
             currentStep={currentStep}
             totalSteps={totalSteps}
@@ -112,37 +141,36 @@ export default function Onboarding() {
               </div>
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-white">
-                  Track Your Progress
+                  Your Complete Recovery Companion
                 </h3>
                 <p className="text-gray-300 max-w-md mx-auto">
-                  Daily check-ins, mood tracking, craving logs, meditation, and
-                  comprehensive analytics to support your recovery journey.
+                  AI-powered risk prediction, dual progress tracking, evidence-based recovery skills, emergency support, and comprehensive wellness tools all in one place.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8 max-w-md mx-auto">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500/20 rounded-full mb-2">
-                    <Heart className="w-6 h-6 text-purple-400" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-2">
+                    <Award className="w-6 h-6 text-blue-400" />
                   </div>
-                  <p className="text-sm text-gray-300">Mood Tracking</p>
+                  <p className="text-sm text-gray-300">Dual Progress Tracking</p>
+                </div>
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-red-500/20 rounded-full mb-2">
+                    <TrendingUp className="w-6 h-6 text-red-400" />
+                  </div>
+                  <p className="text-sm text-gray-300">AI Risk Prediction</p>
+                </div>
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500/20 rounded-full mb-2">
+                    <Brain className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <p className="text-sm text-gray-300">7 Recovery Skills</p>
                 </div>
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-12 h-12 bg-pink-500/20 rounded-full mb-2">
                     <Shield className="w-6 h-6 text-pink-400" />
                   </div>
-                  <p className="text-sm text-gray-300">Prevention Plan</p>
-                </div>
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-2">
-                    <Calendar className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <p className="text-sm text-gray-300">Meeting Tracker</p>
-                </div>
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500/20 rounded-full mb-2">
-                    <Sparkles className="w-6 h-6 text-green-400" />
-                  </div>
-                  <p className="text-sm text-gray-300">Achievements</p>
+                  <p className="text-sm text-gray-300">Emergency Support</p>
                 </div>
               </div>
             </div>
@@ -152,35 +180,72 @@ export default function Onboarding() {
       case 2:
         return (
           <OnboardingStep
-            title="Set Your Sobriety Date"
-            description="When did you start your recovery journey?"
+            title="Create Your Profile"
+            description="Let's personalize your recovery journey"
             currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onBack={handleBack}
+            nextDisabled={!userName.trim() || !dateOfBirth || !sobrietyDateInput}
           >
             <div className="space-y-6 py-4">
               <div className="flex justify-center mb-6">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-2xl">
-                  <Calendar className="w-12 h-12 text-white" />
+                <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-4 rounded-2xl">
+                  <User className="w-12 h-12 text-white" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sobriety-date" className="text-white text-base">
-                  Sobriety Start Date
-                </Label>
-                <Input
-                  id="sobriety-date"
-                  type="date"
-                  value={sobrietyDateInput}
-                  onChange={(e) => setSobrietyDateInput(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-                <p className="text-sm text-gray-400">
-                  This will be used to calculate your days sober and milestone
-                  achievements. You can change this later if needed.
-                </p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="user-name" className="text-white text-base">
+                    Your Name <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="user-name"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date-of-birth" className="text-white text-base">
+                    Date of Birth <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="date-of-birth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sobriety-date" className="text-white text-base">
+                    Sobriety Start Date <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="sobriety-date"
+                    type="date"
+                    value={sobrietyDateInput}
+                    onChange={(e) => setSobrietyDateInput(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+
+                <div className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-purple-200">
+                    <strong>Note:</strong> Your profile information is stored securely on your device. To reset the app and go through onboarding again, you'll need to delete your profile from Settings.
+                  </p>
+                </div>
               </div>
             </div>
           </OnboardingStep>
@@ -381,18 +446,19 @@ export default function Onboarding() {
                   Your Journey Begins Now
                 </h3>
                 <p className="text-gray-300 max-w-md mx-auto">
-                  Recovery Journey is ready to support you every step of the way.
+                  Recover is ready to support you every step of the way.
                   Remember: One day at a time. You've got this! 💪
                 </p>
               </div>
               <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-700/50 rounded-lg p-6 mt-8">
                 <p className="text-white font-medium mb-2">Quick Start Guide:</p>
                 <ul className="text-sm text-gray-300 space-y-2 text-left max-w-md mx-auto">
-                  <li>• Complete your first daily check-in on the Home tab</li>
-                  <li>• Build your prevention plan in Quick Actions</li>
-                  <li>• Log cravings and meetings in the Journal tab</li>
-                  <li>• Track your progress in Analytics</li>
-                  <li>• Add emergency contacts for crisis support</li>
+                  <li>• Check your dual progress counter (Days Sober + Check-In Streak)</li>
+                  <li>• Complete your first daily check-in to start building your streak</li>
+                  <li>• Practice the 7 recovery skills when you need support</li>
+                  <li>• Set up your emergency action plan and crisis contacts</li>
+                  <li>• Explore meditation, journaling, and wellness tools</li>
+                  <li>• Track patterns with AI-powered risk prediction</li>
                 </ul>
               </div>
             </div>

@@ -1,14 +1,22 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/LoadingSkeletons';
-import { Bell, Download, Upload, Trash2, AlertCircle, Sparkles, FileCheck, X } from 'lucide-react';
+import { Bell, Download, Upload, Trash2, AlertCircle, Sparkles, FileCheck, X, Quote, Plus, Star, BarChart3, Cloud, Share2, Smartphone, Clock, Archive } from 'lucide-react';
+import { CloudSyncPanel } from '@/components/app/CloudSyncPanel';
+import { ProgressSharingModal } from '@/components/app/ProgressSharingModal';
+import { WidgetConfigPanel } from '@/components/app/WidgetConfigPanel';
+
+// Lazy load AnalyticsScreen
+const AnalyticsScreen = lazy(() => import('./AnalyticsScreen').then(m => ({ default: m.AnalyticsScreen })));
 import { requestNotificationPermission, checkNotificationPermission, isNative } from '@/lib/notifications';
-import { exportBackupData, importBackupData, getBackupStats } from '@/lib/data-backup';
+import { exportBackupData, importBackupData, getBackupStats, getAutoBackups, restoreAutoBackup, deleteAutoBackup, getDaysSinceLastBackup, createAutoBackup } from '@/lib/data-backup';
 import type { BackupData } from '@/lib/data-backup';
 import { toast } from 'sonner';
 
@@ -23,12 +31,30 @@ export function SettingsScreen() {
     setCelebrationsEnabled,
   } = context;
 
+  // Quote management - with safe defaults
+  const quoteSettings = context.quoteSettings || { refreshFrequency: 'daily' as const, lastRefresh: new Date().toISOString(), disabledQuoteIds: [] };
+  const setQuoteSettings = context.setQuoteSettings || (() => {});
+  const addCustomQuote = context.addCustomQuote || (() => {});
+  const removeQuote = context.removeQuote || (() => {});
+  const toggleFavoriteQuote = context.toggleFavoriteQuote || (() => {});
+  const getAvailableQuotes = context.getAvailableQuotes || (() => []);
+  const favoriteQuoteIds = context.favoriteQuoteIds || [];
+
   const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importPreview, setImportPreview] = useState<BackupData | null>(null);
+  const [newQuoteText, setNewQuoteText] = useState('');
+  const [newQuoteAuthor, setNewQuoteAuthor] = useState('');
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showProgressSharing, setShowProgressSharing] = useState(false);
+  const [showCloudSync, setShowCloudSync] = useState(false);
+  const [showWidgetConfig, setShowWidgetConfig] = useState(false);
+  const [showAutoBackups, setShowAutoBackups] = useState(false);
+  const [autoBackups, setAutoBackups] = useState(getAutoBackups());
+  const [daysSinceBackup, setDaysSinceBackup] = useState(getDaysSinceLastBackup());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check notification permission on mount
@@ -76,6 +102,9 @@ export function SettingsScreen() {
       // Export using our backup utility
       exportBackupData(appData);
 
+      // Update backup timestamp
+      setDaysSinceBackup(0);
+
       toast.success('Backup exported successfully! 📦');
     } catch (error) {
       console.error('Export error:', error);
@@ -83,6 +112,51 @@ export function SettingsScreen() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleCreateAutoBackup = () => {
+    try {
+      // Get all app data from context
+      const { loading, ...appData } = context;
+
+      // Create auto backup
+      createAutoBackup(appData);
+
+      // Refresh auto backups list
+      setAutoBackups(getAutoBackups());
+      setDaysSinceBackup(0);
+
+      toast.success('Auto backup created successfully! 💾');
+    } catch (error) {
+      console.error('Auto backup error:', error);
+      toast.error('Failed to create auto backup');
+    }
+  };
+
+  const handleRestoreAutoBackup = (key: string) => {
+    if (!confirm('This will replace all your current data with the backup. Continue?')) {
+      return;
+    }
+
+    const result = restoreAutoBackup(key);
+
+    if (result.success && result.data) {
+      localStorage.setItem('recovery_journey_data', JSON.stringify(result.data));
+      toast.success('Data restored successfully! Refreshing... 🔄');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      toast.error(result.errors?.join(', ') || 'Failed to restore backup');
+    }
+  };
+
+  const handleDeleteAutoBackup = (key: string) => {
+    if (!confirm('Delete this auto backup?')) {
+      return;
+    }
+
+    deleteAutoBackup(key);
+    setAutoBackups(getAutoBackups());
+    toast.success('Auto backup deleted');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +239,25 @@ export function SettingsScreen() {
     if (confirm('Reset onboarding? You\'ll be taken through the setup again.')) {
       setOnboardingCompleted(false);
       toast.success('Onboarding reset');
+    }
+  };
+
+  const handleAddCustomQuote = () => {
+    if (!newQuoteText.trim()) {
+      toast.error('Please enter a quote');
+      return;
+    }
+
+    addCustomQuote(newQuoteText.trim(), newQuoteAuthor.trim() || undefined);
+    setNewQuoteText('');
+    setNewQuoteAuthor('');
+    toast.success('Custom quote added! 💭');
+  };
+
+  const handleRemoveQuote = (quoteId: string) => {
+    if (confirm('Are you sure you want to remove this quote?')) {
+      removeQuote(quoteId);
+      toast.success('Quote removed');
     }
   };
 
@@ -323,6 +416,134 @@ export function SettingsScreen() {
         </CardContent>
       </Card>
 
+      {/* Quote Management Card */}
+      {quoteSettings && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Quote className="w-5 h-5" />
+              Quote Management
+            </CardTitle>
+            <CardDescription>
+              Customize your motivational quotes
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Refresh Frequency */}
+            <div className="space-y-2">
+              <Label htmlFor="quote-frequency">Quote Refresh Frequency</Label>
+              <Select
+                value={quoteSettings?.refreshFrequency || 'daily'}
+                onValueChange={(value: 'hourly' | 'daily' | 'on-open') =>
+                  setQuoteSettings({ ...quoteSettings, refreshFrequency: value })
+                }
+              >
+                <SelectTrigger id="quote-frequency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Every Hour</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="on-open">Every Time App Opens</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+          {/* Add Custom Quote */}
+          <div className="space-y-3 border-t pt-4">
+            <h4 className="font-semibold text-sm">Add Custom Quote</h4>
+            <div className="space-y-2">
+              <Label htmlFor="quote-text">Quote Text</Label>
+              <Textarea
+                id="quote-text"
+                placeholder="Enter an inspiring quote..."
+                value={newQuoteText}
+                onChange={(e) => setNewQuoteText(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quote-author">Author (Optional)</Label>
+              <Input
+                id="quote-author"
+                placeholder="e.g., Anonymous"
+                value={newQuoteAuthor}
+                onChange={(e) => setNewQuoteAuthor(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleAddCustomQuote}
+              className="w-full"
+              variant="outline"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Quote
+            </Button>
+          </div>
+
+          {/* Quote List */}
+          <div className="space-y-3 border-t pt-4">
+            <h4 className="font-semibold text-sm">
+              All Quotes ({getAvailableQuotes().length})
+            </h4>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {getAvailableQuotes().map((quote) => (
+                <div
+                  key={quote.id}
+                  className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm italic">"{quote.text}"</p>
+                    {quote.author && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        — {quote.author}
+                      </p>
+                    )}
+                    {quote.isCustom && (
+                      <span className="inline-block mt-1 text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
+                        Custom
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => toggleFavoriteQuote(quote.id)}
+                      title={favoriteQuoteIds.includes(quote.id) ? 'Unfavorite' : 'Favorite'}
+                    >
+                      <Star
+                        className={`w-4 h-4 ${
+                          favoriteQuoteIds.includes(quote.id)
+                            ? 'fill-yellow-500 text-yellow-500'
+                            : ''
+                        }`}
+                      />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                      onClick={() => handleRemoveQuote(quote.id)}
+                      title="Remove quote"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {getAvailableQuotes().length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No quotes available. Add a custom quote to get started.
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      )}
+
       {/* Data Management Card */}
       <Card>
         <CardHeader>
@@ -332,6 +553,21 @@ export function SettingsScreen() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Backup Status */}
+          {daysSinceBackup !== null && daysSinceBackup >= 7 && (
+            <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3 flex items-start gap-2 mb-3">
+              <Clock className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-yellow-200">
+                  Backup Reminder
+                </p>
+                <p className="text-xs text-yellow-200/80 mt-1">
+                  It's been {daysSinceBackup} days since your last backup. Consider creating a backup to protect your data.
+                </p>
+              </div>
+            </div>
+          )}
+
           <Button
             variant="outline"
             className="w-full justify-start"
@@ -380,9 +616,86 @@ export function SettingsScreen() {
             </Button>
           </div>
 
+          {/* Auto Backup Section */}
+          <div className="border-t pt-3 mt-3">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="font-semibold text-sm">Auto Backups</h4>
+                <p className="text-xs text-muted-foreground">
+                  Automatic backups stored locally
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAutoBackups(!showAutoBackups)}
+              >
+                {showAutoBackups ? 'Hide' : `View ${autoBackups.length}`}
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleCreateAutoBackup}
+            >
+              <Archive className="w-4 h-4 mr-2" />
+              Create Auto Backup Now
+            </Button>
+
+            {showAutoBackups && autoBackups.length > 0 && (
+              <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                {autoBackups.map((backup) => (
+                  <div
+                    key={backup.key}
+                    className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">
+                        {new Date(backup.date).toLocaleDateString()} at{' '}
+                        {new Date(backup.date).toLocaleTimeString()}
+                      </p>
+                      {backup.stats && (
+                        <p className="text-xs text-muted-foreground">
+                          {backup.stats.totalRecords} records
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleRestoreAutoBackup(backup.key)}
+                        title="Restore backup"
+                      >
+                        <Upload className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        onClick={() => handleDeleteAutoBackup(backup.key)}
+                        title="Delete backup"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showAutoBackups && autoBackups.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                No auto backups yet. Create one to get started.
+              </p>
+            )}
+          </div>
+
           <Button
             variant="outline"
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10 mt-3 border-t pt-3"
             onClick={handleClearData}
             disabled={isClearing}
           >
@@ -401,12 +714,90 @@ export function SettingsScreen() {
         </CardContent>
       </Card>
 
+      {/* Cloud Sync Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cloud className="w-5 h-5" />
+            Cloud Sync
+          </CardTitle>
+          <CardDescription>
+            Sync your data across devices
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => setShowCloudSync(true)}
+          >
+            <Cloud className="w-4 h-4 mr-2" />
+            Manage Cloud Sync
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Progress Sharing Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Share2 className="w-5 h-5" />
+            Progress Sharing
+          </CardTitle>
+          <CardDescription>
+            Share your progress with sponsors and support network
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => setShowProgressSharing(true)}
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Create Progress Report
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Widget Configuration Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5" />
+            Home Screen Widgets
+          </CardTitle>
+          <CardDescription>
+            Configure widgets for your home screen
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => setShowWidgetConfig(true)}
+          >
+            <Smartphone className="w-4 h-4 mr-2" />
+            Configure Widgets
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Other Settings Card */}
       <Card>
         <CardHeader>
           <CardTitle>Other</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => setShowAnalytics(true)}
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            View Analytics
+          </Button>
+
           <Button
             variant="outline"
             className="w-full justify-start"
@@ -417,7 +808,7 @@ export function SettingsScreen() {
 
           <div className="pt-4 border-t border-gray-700">
             <p className="text-sm text-muted-foreground text-center">
-              Recovery Journey v1.0.0
+              Recover v1.0.0
             </p>
             <p className="text-xs text-muted-foreground text-center mt-1">
               Made with ❤️ for the recovery community
@@ -567,6 +958,117 @@ export function SettingsScreen() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Analytics Modal */}
+      {showAnalytics && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="analytics-modal-title"
+        >
+          <div className="w-full max-w-4xl max-h-[90vh] bg-background rounded-lg overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-6 h-6" />
+                <h2 id="analytics-modal-title" className="text-xl font-bold">Analytics</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAnalytics(false)}
+                aria-label="Close analytics"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto">
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-sm text-muted-foreground">Loading analytics...</p>
+                  </div>
+                </div>
+              }>
+                <AnalyticsScreen />
+              </Suspense>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Sync Modal */}
+      {showCloudSync && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cloud-sync-modal-title"
+        >
+          <div className="w-full max-w-4xl max-h-[90vh] bg-background rounded-lg overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Cloud className="w-6 h-6" />
+                <h2 id="cloud-sync-modal-title" className="text-xl font-bold">Cloud Sync</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowCloudSync(false)}
+                aria-label="Close cloud sync"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <CloudSyncPanel />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Sharing Modal */}
+      <ProgressSharingModal
+        isOpen={showProgressSharing}
+        onClose={() => setShowProgressSharing(false)}
+      />
+
+      {/* Widget Config Modal */}
+      {showWidgetConfig && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="widget-config-modal-title"
+        >
+          <div className="w-full max-w-4xl max-h-[90vh] bg-background rounded-lg overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-6 h-6" />
+                <h2 id="widget-config-modal-title" className="text-xl font-bold">Widget Configuration</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowWidgetConfig(false)}
+                aria-label="Close widget config"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <WidgetConfigPanel />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -20,6 +20,9 @@ export default defineConfig({
     assetsDir: 'assets',
     emptyOutDir: true,
     rollupOptions: {
+      external: [
+        '@aparajita/capacitor-biometric-auth',
+      ],
       output: {
         manualChunks: {
           // Split large chart library into separate chunk
