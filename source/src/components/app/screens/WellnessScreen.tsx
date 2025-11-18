@@ -358,7 +358,7 @@ export function WellnessScreen() {
             <CardContent>
               {sleepEntries.length === 0 ? (
                 <EmptyState
-                  icon={<Moon className="w-12 h-12 text-gray-400" />}
+                  icon={Moon}
                   title="No sleep entries yet"
                   description="Start tracking your sleep to see patterns and improve your rest."
                 />
@@ -440,7 +440,7 @@ export function WellnessScreen() {
             <CardContent>
               {medications.length === 0 ? (
                 <EmptyState
-                  icon={<Pill className="w-12 h-12 text-gray-400" />}
+                  icon={Pill}
                   title="No medications tracked"
                   description="Add your medications to track doses and get refill reminders."
                 />
@@ -558,7 +558,7 @@ export function WellnessScreen() {
             <CardContent>
               {exerciseEntries.length === 0 ? (
                 <EmptyState
-                  icon={<Dumbbell className="w-12 h-12 text-gray-400" />}
+                  icon={Dumbbell}
                   title="No exercise logged yet"
                   description="Start tracking your workouts to build healthy habits."
                 />
@@ -644,7 +644,7 @@ export function WellnessScreen() {
             <CardContent>
               {nutritionEntries.length === 0 ? (
                 <EmptyState
-                  icon={<Apple className="w-12 h-12 text-gray-400" />}
+                  icon={Apple}
                   title="No meals logged yet"
                   description="Track your nutrition to build healthier eating habits."
                 />
