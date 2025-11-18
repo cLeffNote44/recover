@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Home, Calendar, BookOpen, Users, Target, Shield, Settings, Heart, TrendingUp } from "lucide-react";
+import { Home, Calendar, BookOpen, Users, Shield, Settings, Heart } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -12,7 +12,6 @@ const tabs = [
   { id: 'journal', icon: BookOpen, label: 'Journal' },
   { id: 'prevention', icon: Shield, label: 'Prevention' },
   { id: 'wellness', icon: Heart, label: 'Wellness' },
-  { id: 'recovery', icon: TrendingUp, label: 'Recovery' },
   { id: 'contacts', icon: Users, label: 'Contacts' },
   { id: 'settings', icon: Settings, label: 'Settings' }
 ];

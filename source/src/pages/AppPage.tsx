@@ -14,7 +14,6 @@ const ContactsScreen = lazy(() => import('@/components/app/screens/ContactsScree
 const GoalsScreen = lazy(() => import('@/components/app/screens/GoalsScreen').then(m => ({ default: m.GoalsScreen })));
 const PreventionScreen = lazy(() => import('@/components/app/screens/PreventionScreen').then(m => ({ default: m.PreventionScreen })));
 const WellnessScreen = lazy(() => import('@/components/app/screens/WellnessScreen').then(m => ({ default: m.WellnessScreen })));
-const RelapseTrackerScreen = lazy(() => import('@/components/app/screens/RelapseTrackerScreen').then(m => ({ default: m.RelapseTrackerScreen })));
 const SettingsScreen = lazy(() => import('@/components/app/screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
 
 function AppContent() {
@@ -76,7 +75,6 @@ function AppContent() {
             {activeTab === 'goals' && <GoalsScreen />}
             {activeTab === 'prevention' && <PreventionScreen />}
             {activeTab === 'wellness' && <WellnessScreen />}
-            {activeTab === 'recovery' && <RelapseTrackerScreen />}
             {activeTab === 'settings' && <SettingsScreen />}
           </Suspense>
         </ErrorBoundary>

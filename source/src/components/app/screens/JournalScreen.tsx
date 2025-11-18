@@ -3,6 +3,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,10 +12,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { HALTCheck } from '@/components/HALTCheck';
 import { EmptyState } from '@/components/EmptyState';
 import { JournalScreenSkeleton } from '@/components/LoadingSkeletons';
-import { AlertTriangle, TrendingUp, Target, Heart, Plus, Trash2, Users } from 'lucide-react';
-import { TRIGGER_TYPES, MEDITATION_TYPES } from '@/types/app';
-import type { HALTCheck as HALTCheckType } from '@/types/app';
-import { formatDate } from '@/lib/utils-app';
+import { AlertTriangle, TrendingUp, Target, Heart, Plus, Trash2, Users, Eye, EyeOff } from 'lucide-react';
+import { TRIGGER_TYPES, MEDITATION_TYPES, RELAPSE_TRIGGERS, RELAPSE_EMOTIONS, SUPPORT_TYPES } from '@/types/app';
+import type { HALTCheck as HALTCheckType, Relapse, CleanPeriod } from '@/types/app';
+import { formatDate, calculateDaysSober } from '@/lib/utils-app';
 import { toast } from 'sonner';
 
 export function JournalScreen() {
@@ -31,6 +32,12 @@ export function JournalScreen() {
     setGratitude,
     meditations,
     setMeditations,
+    relapses,
+    setRelapses,
+    cleanPeriods,
+    setCleanPeriods,
+    sobrietyDate,
+    setSobrietyDate,
     loading,
     celebrationsEnabled
   } = useAppContext();
@@ -83,6 +90,39 @@ export function JournalScreen() {
     type: 'Mindfulness',
     notes: ''
   });
+
+  // Setback state
+  const [showLogSetback, setShowLogSetback] = useState(false);
+  const [newRelapse, setNewRelapse] = useState({
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    substance: '',
+    triggers: [] as string[],
+    circumstances: '',
+    emotions: [] as string[],
+    thoughts: '',
+    consequences: '',
+    lessonsLearned: '',
+    preventionPlan: '',
+    supportUsed: [] as string[],
+    severity: 5,
+    isPrivate: false
+  });
+
+  // Calculate days clean before relapse
+  const calculateDaysCleanBefore = (relapseDate: string): number => {
+    const mostRecentPeriod = cleanPeriods
+      .filter(p => !p.endDate || p.endDate <= relapseDate)
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+
+    if (!mostRecentPeriod) {
+      return calculateDaysSober(sobrietyDate);
+    }
+
+    const start = new Date(mostRecentPeriod.startDate);
+    const end = new Date(relapseDate);
+    return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
   const handleAddCraving = () => {
     setCravings([...cravings, {
@@ -159,6 +199,104 @@ export function JournalScreen() {
     toast.success('Meditation logged! Taking care of yourself 🧘');
   };
 
+  // Handle logging a setback
+  const handleLogSetback = () => {
+    if (!newRelapse.circumstances.trim()) {
+      toast.error('Please describe what happened');
+      return;
+    }
+
+    if (newRelapse.triggers.length === 0) {
+      toast.error('Please select at least one trigger');
+      return;
+    }
+
+    const daysCleanBefore = calculateDaysCleanBefore(newRelapse.date);
+
+    const relapse: Relapse = {
+      id: Date.now(),
+      date: newRelapse.date,
+      time: newRelapse.time || undefined,
+      substance: newRelapse.substance || undefined,
+      triggers: newRelapse.triggers,
+      circumstances: newRelapse.circumstances,
+      emotions: newRelapse.emotions,
+      thoughts: newRelapse.thoughts,
+      consequences: newRelapse.consequences,
+      lessonsLearned: newRelapse.lessonsLearned,
+      preventionPlan: newRelapse.preventionPlan,
+      supportUsed: newRelapse.supportUsed,
+      severity: newRelapse.severity,
+      daysCleanBefore,
+      isPrivate: newRelapse.isPrivate
+    };
+
+    // End the current clean period
+    const currentPeriod = cleanPeriods.find(p => !p.endDate);
+    if (currentPeriod) {
+      const updatedPeriods = cleanPeriods.map(p =>
+        p.id === currentPeriod.id
+          ? {
+              ...p,
+              endDate: newRelapse.date,
+              relapseId: relapse.id
+            }
+          : p
+      );
+      setCleanPeriods(updatedPeriods);
+    }
+
+    // Start a new clean period from tomorrow
+    const tomorrow = new Date(newRelapse.date);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const newPeriod: CleanPeriod = {
+      id: Date.now() + 1,
+      startDate: tomorrow.toISOString().split('T')[0],
+      daysClean: 0,
+      notes: 'Fresh start after setback'
+    };
+    setCleanPeriods([...cleanPeriods, newPeriod]);
+
+    // Update sobriety date to new start
+    setSobrietyDate(newPeriod.startDate);
+
+    // Save relapse
+    setRelapses([...relapses, relapse]);
+
+    // Reset form
+    setShowLogSetback(false);
+    setNewRelapse({
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0, 5),
+      substance: '',
+      triggers: [],
+      circumstances: '',
+      emotions: [],
+      thoughts: '',
+      consequences: '',
+      lessonsLearned: '',
+      preventionPlan: '',
+      supportUsed: [],
+      severity: 5,
+      isPrivate: false
+    });
+
+    toast.success('Setback logged. Remember: Recovery is a journey, not a destination.');
+  };
+
+  const handleDeleteRelapse = (id: number) => {
+    if (confirm('Are you sure you want to delete this entry? This cannot be undone.')) {
+      setRelapses(relapses.filter(r => r.id !== id));
+      toast.success('Entry deleted');
+    }
+  };
+
+  const togglePrivacy = (id: number) => {
+    setRelapses(relapses.map(r =>
+      r.id === id ? { ...r, isPrivate: !r.isPrivate } : r
+    ));
+  };
+
   // Celebrate craving overcome with confetti
   const handleAddCravingWithCelebration = () => {
     handleAddCraving();
@@ -180,10 +318,11 @@ export function JournalScreen() {
       <h2 className="text-2xl font-bold">Journal</h2>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="cravings">Cravings</TabsTrigger>
           <TabsTrigger value="meetings">Meetings</TabsTrigger>
           <TabsTrigger value="growth">Growth</TabsTrigger>
+          <TabsTrigger value="setbacks">Setbacks</TabsTrigger>
         </TabsList>
 
         {/* Cravings Tab */}
@@ -392,6 +531,130 @@ export function JournalScreen() {
                 );
               })}
           </div>
+        </TabsContent>
+
+        {/* Setbacks Tab */}
+        <TabsContent value="setbacks" className="space-y-4">
+          <Button onClick={() => setShowLogSetback(true)} className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Log Setback
+          </Button>
+
+          {relapses.length === 0 ? (
+            <EmptyState
+              icon={Heart}
+              title="No Setbacks Logged"
+              description="Tracking setbacks with honesty helps identify patterns and strengthen your recovery. Remember: Recovery is about progress, not perfection."
+              actionLabel="Log First Entry"
+              onAction={() => setShowLogSetback(true)}
+              iconColor="text-purple-500"
+            />
+          ) : (
+            <div className="space-y-4">
+              {relapses
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .map(relapse => (
+                  <Card key={relapse.id} className="relative">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold">{formatDate(relapse.date)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            After {relapse.daysCleanBefore} days clean
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => togglePrivacy(relapse.id)}
+                            title={relapse.isPrivate ? 'Show details' : 'Hide details'}
+                          >
+                            {relapse.isPrivate ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRelapse(relapse.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {!relapse.isPrivate && (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Triggers</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {relapse.triggers.map((trigger, i) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs"
+                                >
+                                  {trigger}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {relapse.emotions.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-600">Emotions</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {relapse.emotions.map((emotion, i) => (
+                                  <span
+                                    key={i}
+                                    className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs"
+                                  >
+                                    {emotion}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {relapse.circumstances && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-600">What Happened</p>
+                              <p className="text-sm mt-1">{relapse.circumstances}</p>
+                            </div>
+                          )}
+
+                          {relapse.lessonsLearned && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <p className="text-sm font-medium text-green-900">Lessons Learned</p>
+                              <p className="text-sm text-green-800 mt-1">{relapse.lessonsLearned}</p>
+                            </div>
+                          )}
+
+                          {relapse.preventionPlan && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <p className="text-sm font-medium text-blue-900">Prevention Plan</p>
+                              <p className="text-sm text-blue-800 mt-1">{relapse.preventionPlan}</p>
+                            </div>
+                          )}
+
+                          <div className="text-xs text-gray-500 pt-2 border-t">
+                            Severity: {relapse.severity}/10
+                          </div>
+                        </div>
+                      )}
+
+                      {relapse.isPrivate && (
+                        <p className="text-sm text-gray-500 italic">
+                          Details hidden for privacy
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -703,6 +966,216 @@ export function JournalScreen() {
                 </Button>
                 <Button onClick={handleAddMeditation} className="flex-1">
                   Save
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Log Setback Modal */}
+      {showLogSetback && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <Card className="w-full max-w-2xl my-8">
+            <CardHeader>
+              <CardTitle>Log a Setback</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Recovery is about progress, not perfection. Use this to learn and grow stronger.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={newRelapse.date}
+                    onChange={(e) => setNewRelapse({ ...newRelapse, date: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <Label>Time (optional)</Label>
+                  <Input
+                    type="time"
+                    value={newRelapse.time}
+                    onChange={(e) => setNewRelapse({ ...newRelapse, time: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>What triggered this? (Select all that apply) *</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {RELAPSE_TRIGGERS.map(trigger => (
+                    <label key={trigger} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={newRelapse.triggers.includes(trigger)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewRelapse({
+                              ...newRelapse,
+                              triggers: [...newRelapse.triggers, trigger]
+                            });
+                          } else {
+                            setNewRelapse({
+                              ...newRelapse,
+                              triggers: newRelapse.triggers.filter(t => t !== trigger)
+                            });
+                          }
+                        }}
+                      />
+                      {trigger}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>What happened? *</Label>
+                <Textarea
+                  value={newRelapse.circumstances}
+                  onChange={(e) => setNewRelapse({ ...newRelapse, circumstances: e.target.value })}
+                  placeholder="Describe the situation..."
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label>How were you feeling? (Select all that apply)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {RELAPSE_EMOTIONS.map(emotion => (
+                    <label key={emotion} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={newRelapse.emotions.includes(emotion)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewRelapse({
+                              ...newRelapse,
+                              emotions: [...newRelapse.emotions, emotion]
+                            });
+                          } else {
+                            setNewRelapse({
+                              ...newRelapse,
+                              emotions: newRelapse.emotions.filter(e => e !== emotion)
+                            });
+                          }
+                        }}
+                      />
+                      {emotion}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>What were you thinking before it happened?</Label>
+                <Textarea
+                  value={newRelapse.thoughts}
+                  onChange={(e) => setNewRelapse({ ...newRelapse, thoughts: e.target.value })}
+                  placeholder="Your thought patterns..."
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <Label>What support did you try to use?</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {SUPPORT_TYPES.map(support => (
+                    <label key={support} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={newRelapse.supportUsed.includes(support)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewRelapse({
+                              ...newRelapse,
+                              supportUsed: [...newRelapse.supportUsed, support]
+                            });
+                          } else {
+                            setNewRelapse({
+                              ...newRelapse,
+                              supportUsed: newRelapse.supportUsed.filter(s => s !== support)
+                            });
+                          }
+                        }}
+                      />
+                      {support}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Severity: {newRelapse.severity}/10</Label>
+                <Slider
+                  value={[newRelapse.severity]}
+                  onValueChange={([value]) => setNewRelapse({ ...newRelapse, severity: value })}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>What did you learn from this?</Label>
+                <Textarea
+                  value={newRelapse.lessonsLearned}
+                  onChange={(e) => setNewRelapse({ ...newRelapse, lessonsLearned: e.target.value })}
+                  placeholder="Insights you gained..."
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label>What will you do differently next time?</Label>
+                <Textarea
+                  value={newRelapse.preventionPlan}
+                  onChange={(e) => setNewRelapse({ ...newRelapse, preventionPlan: e.target.value })}
+                  placeholder="Your plan to prevent this in the future..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="private"
+                  checked={newRelapse.isPrivate}
+                  onCheckedChange={(checked) =>
+                    setNewRelapse({ ...newRelapse, isPrivate: !!checked })
+                  }
+                />
+                <Label htmlFor="private" className="cursor-pointer">
+                  Keep details private (hide from exports/shares)
+                </Label>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleLogSetback} className="flex-1">
+                  Log Setback
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowLogSetback(false);
+                    setNewRelapse({
+                      date: new Date().toISOString().split('T')[0],
+                      time: new Date().toTimeString().slice(0, 5),
+                      substance: '',
+                      triggers: [],
+                      circumstances: '',
+                      emotions: [],
+                      thoughts: '',
+                      consequences: '',
+                      lessonsLearned: '',
+                      preventionPlan: '',
+                      supportUsed: [],
+                      severity: 5,
+                      isPrivate: false
+                    });
+                  }}
+                >
+                  Cancel
                 </Button>
               </div>
             </CardContent>
