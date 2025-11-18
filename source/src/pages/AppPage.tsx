@@ -2,8 +2,9 @@ import { useState, lazy, Suspense } from 'react';
 import { AppProvider, useAppContext } from '@/contexts/AppContext';
 import { BottomNav } from '@/components/app/BottomNav';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Search } from 'lucide-react';
 import { EmergencySupportModal } from '@/components/app/EmergencySupportModal';
+import { SearchModal } from '@/components/app/SearchModal';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Lazy load screen components for better performance
@@ -19,6 +20,7 @@ const SettingsScreen = lazy(() => import('@/components/app/screens/SettingsScree
 function AppContent() {
   const [activeTab, setActiveTab] = useState('home');
   const [showEmergency, setShowEmergency] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { loading, contacts } = useAppContext();
 
   if (loading) {
@@ -40,16 +42,27 @@ function AppContent() {
         Skip to main content
       </a>
 
-      {/* Emergency Button - Fixed Position */}
-      <Button
-        onClick={() => setShowEmergency(true)}
-        className="fixed top-4 right-4 z-40 bg-red-500 hover:bg-red-600 text-white shadow-lg"
-        size="sm"
-        aria-label="Open emergency support resources"
-      >
-        <AlertCircle className="w-4 h-4 mr-2" aria-hidden="true" />
-        Emergency
-      </Button>
+      {/* Header Buttons - Fixed Position */}
+      <div className="fixed top-4 right-4 z-40 flex gap-2">
+        <Button
+          onClick={() => setShowSearch(true)}
+          variant="outline"
+          size="sm"
+          aria-label="Open search"
+          className="bg-white/90 backdrop-blur-sm shadow-lg"
+        >
+          <Search className="w-4 h-4" aria-hidden="true" />
+        </Button>
+        <Button
+          onClick={() => setShowEmergency(true)}
+          className="bg-red-500 hover:bg-red-600 text-white shadow-lg"
+          size="sm"
+          aria-label="Open emergency support resources"
+        >
+          <AlertCircle className="w-4 h-4 mr-2" aria-hidden="true" />
+          Emergency
+        </Button>
+      </div>
 
       {/* Main Content */}
       <main
@@ -91,6 +104,13 @@ function AppContent() {
         onClose={() => setShowEmergency(false)}
         contacts={contacts}
         riskLevel="high"
+      />
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+        onNavigate={setActiveTab}
       />
     </div>
   );
