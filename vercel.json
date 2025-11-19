@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd source && pnpm run build",
+  "buildCommand": "cd source && npm run build",
   "outputDirectory": "source/dist",
-  "installCommand": "cd source && pnpm install",
+  "installCommand": "cd source && npm install",
   "framework": "vite",
   "rewrites": [
     {
@@ -36,15 +36,6 @@
           "value": "/"
         }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ]
 }
