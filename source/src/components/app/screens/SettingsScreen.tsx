@@ -8,10 +8,13 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/LoadingSkeletons';
-import { Bell, Download, Upload, Trash2, AlertCircle, Sparkles, FileCheck, X, Quote, Plus, Star, BarChart3, Cloud, Share2, Smartphone, Clock, Archive } from 'lucide-react';
+import { Bell, Download, Upload, Trash2, AlertCircle, Sparkles, FileCheck, X, Quote, Plus, Star, BarChart3, Cloud, Share2, Smartphone, Clock, Archive, FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react';
+import { exportData, type ExportDataType } from '@/lib/csv-export';
 import { CloudSyncPanel } from '@/components/app/CloudSyncPanel';
 import { ProgressSharingModal } from '@/components/app/ProgressSharingModal';
 import { WidgetConfigPanel } from '@/components/app/WidgetConfigPanel';
+import { TrashBin } from '@/components/app/TrashBin';
+import { type TrashItemType } from '@/lib/trash-system';
 
 // Lazy load AnalyticsScreen
 const AnalyticsScreen = lazy(() => import('./AnalyticsScreen').then(m => ({ default: m.AnalyticsScreen })));
@@ -55,6 +58,7 @@ export function SettingsScreen() {
   const [showAutoBackups, setShowAutoBackups] = useState(false);
   const [autoBackups, setAutoBackups] = useState(getAutoBackups());
   const [daysSinceBackup, setDaysSinceBackup] = useState(getDaysSinceLastBackup());
+  const [showCSVExport, setShowCSVExport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check notification permission on mount
@@ -239,6 +243,52 @@ export function SettingsScreen() {
     if (confirm('Reset onboarding? You\'ll be taken through the setup again.')) {
       setOnboardingCompleted(false);
       toast.success('Onboarding reset');
+    }
+  };
+
+  const handleCSVExport = (dataType: ExportDataType) => {
+    try {
+      const { loading, ...appData } = context;
+
+      exportData(dataType, {
+        checkIns: appData.checkIns || [],
+        cravings: appData.cravings || [],
+        meetings: appData.meetings || [],
+        meditations: appData.meditations || [],
+        growthLogs: appData.growthLogs || [],
+        goals: appData.goals || [],
+        contacts: appData.contacts || [],
+      });
+
+      toast.success(`${dataType === 'all' ? 'All data' : dataType} exported as CSV!`);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  const handleTrashRestore = (type: TrashItemType, data: any) => {
+    // Restore item based on type
+    const typeToSetter: Record<TrashItemType, () => void> = {
+      checkIn: () => context.setCheckIns?.([...context.checkIns, data]),
+      craving: () => context.setCravings?.([...context.cravings, data]),
+      meeting: () => context.setMeetings?.([...context.meetings, data]),
+      meditation: () => context.setMeditations?.([...context.meditations, data]),
+      growthLog: () => context.setGrowthLogs?.([...context.growthLogs, data]),
+      challenge: () => context.setChallenges?.([...context.challenges, data]),
+      gratitude: () => context.setGratitude?.([...context.gratitude, data]),
+      contact: () => context.setContacts?.([...context.contacts, data]),
+      goal: () => context.setGoals?.([...context.goals, data]),
+      sleepEntry: () => context.setSleepEntries?.([...context.sleepEntries, data]),
+      exerciseEntry: () => context.setExerciseEntries?.([...context.exerciseEntries, data]),
+      nutritionEntry: () => context.setNutritionEntries?.([...context.nutritionEntries, data]),
+      relapse: () => context.setRelapses?.([...context.relapses, data]),
+      reason: () => context.setReasonsForSobriety?.([...context.reasonsForSobriety, data])
+    };
+
+    const setter = typeToSetter[type];
+    if (setter) {
+      setter();
     }
   };
 
@@ -693,6 +743,107 @@ export function SettingsScreen() {
             )}
           </div>
 
+          {/* CSV Export Section */}
+          <div className="border-t pt-3 mt-3">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  CSV Export
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Export data for spreadsheet analysis
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCSVExport(!showCSVExport)}
+              >
+                {showCSVExport ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {showCSVExport && (
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleCSVExport('all')}
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export All Data
+                </Button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('checkins')}
+                    disabled={(context.checkIns?.length || 0) === 0}
+                  >
+                    Check-ins ({context.checkIns?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('cravings')}
+                    disabled={(context.cravings?.length || 0) === 0}
+                  >
+                    Cravings ({context.cravings?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('meetings')}
+                    disabled={(context.meetings?.length || 0) === 0}
+                  >
+                    Meetings ({context.meetings?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('meditations')}
+                    disabled={(context.meditations?.length || 0) === 0}
+                  >
+                    Meditations ({context.meditations?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('growthLogs')}
+                    disabled={(context.growthLogs?.length || 0) === 0}
+                  >
+                    Growth ({context.growthLogs?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('goals')}
+                    disabled={(context.goals?.length || 0) === 0}
+                  >
+                    Goals ({context.goals?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('contacts')}
+                    disabled={(context.contacts?.length || 0) === 0}
+                  >
+                    Contacts ({context.contacts?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCSVExport('analytics')}
+                  >
+                    Analytics
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Button
             variant="outline"
             className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10 mt-3 border-t pt-3"
@@ -713,6 +864,9 @@ export function SettingsScreen() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Trash Bin */}
+      <TrashBin onRestore={handleTrashRestore} />
 
       {/* Cloud Sync Card */}
       <Card>
